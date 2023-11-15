@@ -1,0 +1,23 @@
+using Plots
+using QuadGK
+using ForwardDiff
+using Calculus
+using BenchmarkTools
+
+tmax = 1
+t = collect(LinRange(0, tmax, 100))
+dt = t[2] - t[1]
+
+g(x) = sin(x)
+L(x) = √(1 + x[3]^2)
+J(L, f) = quadgk(x -> L([x, f(x), ForwardDiff.derivative(f, x)]), 0, tmax)[1]
+J(L, f, x) = quadgk(x -> L([x, f(x), ForwardDiff.derivative(f, x)]), 0, x)[1]
+∇(L, f, x) = ForwardDiff.gradient(L, [x, f(x), ForwardDiff.derivative(f, x)])[2] - ForwardDiff.derivative(x -> ForwardDiff.gradient(L, [x, f(x), ForwardDiff.derivative(f, x)])[3], x)
+
+len(x) = sum([√(dt^2 + (x[i+1]-x[i])^2) for i in 1 : length(x) - 1])
+grad = ForwardDiff.gradient(len, g.(t))
+
+plot(t, g.(t), label = "function")
+plot!(t, J.(L, g, t), label = "length of the function curve")
+plot!(t[2:end-1], grad[2:end-1] / dt, label = "discrete gradient", markershape=:+)
+plot!(t, ∇.(L, g, t), label = "continuous gradient ∇")
